@@ -1,4 +1,6 @@
 const express = require("express");
+//Redis nodejs client init
+const Redis = require("ioredis");
 //MongoDB extension mongoose init
 const mongoose = require("mongoose");
 //Using Cluster module for multi-threaded performance
@@ -6,6 +8,10 @@ const cluster = require("cluster");
 const os = require("os");
 
 const port = process.env.PORT || 3051;
+const redis = new Redis({
+  host: "localhost",
+  port: 6379,
+});
 const app = express();
 
 const cpuNum = os.cpus().length;
