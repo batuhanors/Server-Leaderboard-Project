@@ -8,12 +8,12 @@ const cluster = require("cluster");
 const os = require("os");
 
 const port = process.env.PORT || 3051;
+//Initializing Redis
 const redis = new Redis({
   host: "localhost",
   port: 6379,
 });
 const app = express();
-
 const cpuNum = os.cpus().length;
 
 app.get("/", (req, res) => {
@@ -22,6 +22,7 @@ app.get("/", (req, res) => {
   cluster.worker.kill();
 });
 
+//NodeJS Cluster
 if (cluster.isMaster) {
   for (let i = 0; i < cpuNum; i++) {
     cluster.fork();
@@ -43,6 +44,14 @@ if (cluster.isMaster) {
     )
     .then(() => console.log("Connection to the database is successful!"))
     .catch((err) => console.log(err));
+
+  //Redis connection
+  redis.on("connect", () => {
+    console.log("Redis has connected!");
+  });
+  redis.on("error", (err) => {
+    console.log(err);
+  });
 
   app.listen(port, () => {
     console.log(`The server has started on http://localhost:${port}`);
