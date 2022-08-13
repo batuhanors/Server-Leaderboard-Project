@@ -1,6 +1,5 @@
 const express = require("express");
-//Redis nodejs client init
-const Redis = require("ioredis");
+
 //MongoDB extension mongoose init
 const mongoose = require("mongoose");
 //Using Cluster module for multi-threaded performance
@@ -8,11 +7,7 @@ const cluster = require("cluster");
 const os = require("os");
 
 const port = process.env.PORT || 3051;
-//Initializing Redis
-const redis = new Redis({
-  host: "localhost",
-  port: 6379,
-});
+
 const app = express();
 const cpuNum = os.cpus().length;
 
@@ -21,6 +16,8 @@ app.get("/", (req, res) => {
   //kill this filthy worker
   cluster.worker.kill();
 });
+
+app.use("/api", require("./routes/router"));
 
 //NodeJS Cluster
 if (cluster.isMaster) {
@@ -44,14 +41,6 @@ if (cluster.isMaster) {
     )
     .then(() => console.log("Connection to the database is successful!"))
     .catch((err) => console.log(err));
-
-  //Redis connection
-  redis.on("connect", () => {
-    console.log("Redis has connected!");
-  });
-  redis.on("error", (err) => {
-    console.log(err);
-  });
 
   app.listen(port, () => {
     console.log(`The server has started on http://localhost:${port}`);
