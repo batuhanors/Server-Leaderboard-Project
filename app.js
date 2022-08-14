@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 
 //MongoDB extension mongoose init
 const mongoose = require("mongoose");
@@ -9,6 +10,16 @@ const os = require("os");
 const port = process.env.PORT || 3051;
 
 const app = express();
+
+app.use(
+  cors({
+    credentials: true,
+    origin: ["http://localhost:3000"],
+    exposedHeaders: "Set-Cookie",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  })
+);
+
 const cpuNum = os.cpus().length;
 
 app.get("/", (req, res) => {
@@ -18,6 +29,9 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api", require("./routes/router"));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 //NodeJS Cluster
 if (cluster.isMaster) {

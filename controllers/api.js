@@ -9,7 +9,7 @@ module.exports = class API {
   static async getUsers(req, res) {
     try {
       const players = await getPlayers();
-      console.log(players);
+      //console.log(players);
 
       res.status(200).json(players);
     } catch (error) {
@@ -34,10 +34,11 @@ module.exports = class API {
         totalMoney += parseFloat(players[i]);
       }
 
-      prizeMoney = totalMoney * 0.02;
-      firstPrize = prizeMoney * 0.2;
-      secondPrize = prizeMoney * 0.15;
-      thirdPrize = prizeMoney * 0.1;
+      prizeMoney = Math.round((totalMoney * 0.02 + Number.EPSILON) * 100) / 100; // Ensuring that only two decimal places
+      firstPrize = Math.round((prizeMoney * 0.2 + Number.EPSILON) * 100) / 100;
+      secondPrize =
+        Math.round((prizeMoney * 0.15 + Number.EPSILON) * 100) / 100;
+      thirdPrize = Math.round((prizeMoney * 0.1 + Number.EPSILON) * 100) / 100;
 
       res.status(200).json({
         prizePool: prizeMoney,
