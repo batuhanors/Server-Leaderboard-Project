@@ -1,4 +1,5 @@
 const redisClient = require("./redis");
+const Player = require("../models/playerSchema");
 
 async function getPlayers() {
   const sortedPlayers = await redisClient.main();
@@ -8,10 +9,45 @@ async function getPlayers() {
 module.exports = class API {
   static async getUsers(req, res) {
     try {
-      const players = await getPlayers();
-      //console.log(players);
+      const sortedPlayers = await getPlayers();
+      let topSortedPlayers = [];
+      if (sortedPlayers.length > 99) {
+        topSortedPlayers = sortedPlayers.slice(0, 99);
+      } else topSortedPlayers = sortedPlayers;
+      const playerObject = [];
 
-      res.status(200).json(players);
+      //I know it is a high cost operation, however it only calculates 100 players
+      for (let i = 0; i < topSortedPlayers.length; i++) {
+        let singlePlayer = await Player.findOne({
+          username: sortedPlayers[i],
+        });
+
+        //once redis sorts the player ranks, here the top 100's country and money are fetched
+        let playerObjectItem = {
+          username: sortedPlayers[i],
+          country: singlePlayer.country,
+          money: singlePlayer.money,
+        };
+        playerObject.push(playerObjectItem);
+      }
+
+      res.status(200).json(playerObject);
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  static async addUser(req, res) {
+    try {
+      const newUser = new Player({
+        country: "Sri Lanka",
+        username: "fardpizza",
+        money: "485",
+      });
+
+      await newUser.save();
+
+      res.status(200).json({ message: "User created successfully" });
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
