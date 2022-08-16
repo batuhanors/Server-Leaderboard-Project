@@ -1,9 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 
-//MongoDB extension mongoose init
+//MongoDB mongoose
 const mongoose = require("mongoose");
-//Using Cluster module for multi-threaded performance
+//Using Cluster module for scalability
 const cluster = require("cluster");
 const os = require("os");
 

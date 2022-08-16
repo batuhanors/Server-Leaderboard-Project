@@ -30,7 +30,7 @@ async function main() {
 
   //console.log(await redis.zrevrange("players", 0, 30));
 
-  const rank = await redis.zrevrange("players", 0, 30);
+  const rank = await redis.zrevrange("players", 0, players.length);
   return rank;
 }
 

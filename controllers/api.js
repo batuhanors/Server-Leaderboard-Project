@@ -12,21 +12,41 @@ module.exports = class API {
       const sortedPlayers = await getPlayers();
       let topSortedPlayers = [];
       if (sortedPlayers.length > 99) {
+        //getting only top 100 players of sortedPlayersList
         topSortedPlayers = sortedPlayers.slice(0, 99);
       } else topSortedPlayers = sortedPlayers;
       const playerObject = [];
 
-      //I know it is a high cost operation, however it only calculates 100 players
+      //I know it is a high cost operation, however it only calculates top 100 players
       for (let i = 0; i < topSortedPlayers.length; i++) {
         let singlePlayer = await Player.findOne({
           username: sortedPlayers[i],
         });
+
+        let rank = 0;
+
+        if (singlePlayer.dailyRank < i + 1) {
+          console.log(
+            singlePlayer.username +
+              " has ranked down by " +
+              (-(i + 1) + singlePlayer.dailyRank)
+          );
+          rank = -(i + 1) + singlePlayer.dailyRank;
+        } else if (singlePlayer.dailyRank > i + 1) {
+          console.log(
+            singlePlayer.username +
+              " has ranked up by " +
+              (-(i + 1) + singlePlayer.dailyRank)
+          );
+          rank = -(i + 1) + singlePlayer.dailyRank;
+        }
 
         //once redis sorts the player ranks, here the top 100's country and money are fetched
         let playerObjectItem = {
           username: sortedPlayers[i],
           country: singlePlayer.country,
           money: singlePlayer.money,
+          dailyDiff: rank,
         };
         playerObject.push(playerObjectItem);
       }
