@@ -1,20 +1,27 @@
 const redisClient = require("./redis");
 const Player = require("../models/playerSchema");
 
-async function getPlayers() {
+async function getSortedPlayers() {
   const sortedPlayers = await redisClient.main();
   return sortedPlayers;
+}
+
+async function getTopSortedPlayers(sortedPlayers) {
+  let topSortedPlayers = [];
+  if (sortedPlayers.length > 99) {
+    //getting only top 100 players of sortedPlayersList
+    topSortedPlayers = sortedPlayers.slice(0, 99);
+  } else topSortedPlayers = sortedPlayers;
+
+  return topSortedPlayers;
 }
 
 module.exports = class API {
   static async getUsers(req, res) {
     try {
-      const sortedPlayers = await getPlayers();
-      let topSortedPlayers = [];
-      if (sortedPlayers.length > 99) {
-        //getting only top 100 players of sortedPlayersList
-        topSortedPlayers = sortedPlayers.slice(0, 99);
-      } else topSortedPlayers = sortedPlayers;
+      const sortedPlayers = await getSortedPlayers();
+      const topSortedPlayers = await getTopSortedPlayers(sortedPlayers);
+
       const playerObject = [];
 
       //I know it is a high cost operation, however it only calculates top 100 players
@@ -41,7 +48,7 @@ module.exports = class API {
           rank = -(i + 1) + singlePlayer.dailyRank;
         }
 
-        //once redis sorts the player ranks, here the top 100's country and money are fetched
+        //once redis sorts the player ranks, here the top 100 players will sent
         let playerObjectItem = {
           username: sortedPlayers[i],
           country: singlePlayer.country,
@@ -75,33 +82,60 @@ module.exports = class API {
 
   static async calculateMoney(req, res) {
     try {
-      let totalMoney = 0,
-        prizeMoney = 0;
+      const date = new Date();
 
-      let firstPrize = 0,
-        secondPrize = 0,
-        thirdPrize = 0;
+      if (date.getDay() === 0) {
+        res.status(200).json({ isPrizeAvailable: false });
+      } else {
+        let totalMoney = 0,
+          prizeMoney = 0;
 
-      const players = await getPlayers();
+        let firstPrize = 0,
+          secondPrize = 0,
+          thirdPrize = 0,
+          remainingPrize = 0;
 
-      /* Getting all money by taking only even numbers in the object above(Because somehow all players
-      and their money returns in different object item) */
-      for (let i = 1; i < players.length; i += 2) {
-        totalMoney += parseFloat(players[i]);
+        const players = await Player.find();
+
+        players.map((player) => {
+          totalMoney += player.money;
+        });
+
+        prizeMoney =
+          Math.round((totalMoney * 0.02 + Number.EPSILON) * 100) / 100; // Ensuring that only two decimal places displays
+        firstPrize =
+          Math.round((prizeMoney * 0.2 + Number.EPSILON) * 100) / 100;
+        secondPrize =
+          Math.round((prizeMoney * 0.15 + Number.EPSILON) * 100) / 100;
+        thirdPrize =
+          Math.round((prizeMoney * 0.1 + Number.EPSILON) * 100) / 100;
+
+        //remaining prize money
+        remainingPrize =
+          Math.round(
+            (prizeMoney -
+              firstPrize -
+              secondPrize -
+              thirdPrize +
+              Number.EPSILON) *
+              100
+          ) / 100;
+
+        console.log(remainingPrize);
+
+        const sortedPlayers = await getSortedPlayers();
+        const topSortedPlayers = await getTopSortedPlayers(sortedPlayers);
+
+        //console.log(topSortedPlayers);
+
+        res.status(200).json({
+          isPrizeAvailable: true,
+          prizePool: prizeMoney,
+          firstPlayerPrize: firstPrize,
+          secondPlayerPrize: secondPrize,
+          thirdPlayerPrize: thirdPrize,
+        });
       }
-
-      prizeMoney = Math.round((totalMoney * 0.02 + Number.EPSILON) * 100) / 100; // Ensuring that only two decimal places
-      firstPrize = Math.round((prizeMoney * 0.2 + Number.EPSILON) * 100) / 100;
-      secondPrize =
-        Math.round((prizeMoney * 0.15 + Number.EPSILON) * 100) / 100;
-      thirdPrize = Math.round((prizeMoney * 0.1 + Number.EPSILON) * 100) / 100;
-
-      res.status(200).json({
-        prizePool: prizeMoney,
-        firstPlayerPrize: firstPrize,
-        secondPlayerPrize: secondPrize,
-        thirdPlayerPrize: thirdPrize,
-      });
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
