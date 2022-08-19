@@ -67,35 +67,24 @@ module.exports = class API {
       //I know it is a high cost operation, however it only calculates top 100 players
       for (let i = 0; i < topSortedPlayers.length; i++) {
         let singlePlayer = await Player.findOne({
-          username: sortedPlayers[i],
+          username: topSortedPlayers[i],
         });
-
         let rank = 0;
 
         if (singlePlayer.dailyRank < i + 1) {
-          console.log(
-            singlePlayer.username +
-              " has ranked down by " +
-              (-(i + 1) + singlePlayer.dailyRank)
-          );
           rank = -(i + 1) + singlePlayer.dailyRank;
         } else if (singlePlayer.dailyRank > i + 1) {
-          console.log(
-            singlePlayer.username +
-              " has ranked up by " +
-              (-(i + 1) + singlePlayer.dailyRank)
-          );
           rank = -(i + 1) + singlePlayer.dailyRank;
         }
 
         //once redis sorts the player ranks, here the top 100 players will sent
         let playerObjectItem = {
-          username: sortedPlayers[i],
+          username: singlePlayer.username,
           country: singlePlayer.country,
           money: singlePlayer.money,
           dailyDiff: rank,
         };
-        playerObject.push(playerObjectItem);
+        await playerObject.push(playerObjectItem);
       }
 
       res.status(200).json(playerObject);
@@ -191,6 +180,83 @@ module.exports = class API {
         }
         res.status(200).json({ rank: rank, prize: playerPrize });
       }
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  static async getIndividualPlayer(req, res) {
+    try {
+      const requestedUsername = req.body.username;
+
+      const sortedPlayers = await getSortedPlayers();
+
+      await sortedPlayers.map(async (player, index) => {
+        if (requestedUsername === player) {
+          let requestedAbovePlayerOneIndex = 0,
+            requestedAbovePlayerTwoIndex = 0,
+            requestedAbovePlayerThreeIndex = 0;
+
+          let requestedBelowPlayerOneIndex = 0,
+            requestedBelowPlayerTwoIndex = 0;
+
+          const requestedPlayer = await Player.findOne({
+            username: requestedUsername,
+          });
+
+          requestedAbovePlayerOneIndex = index - 1;
+          requestedAbovePlayerTwoIndex = index - 2;
+          requestedAbovePlayerThreeIndex = index - 3;
+
+          requestedBelowPlayerOneIndex = index + 1;
+          requestedBelowPlayerTwoIndex = index + 2;
+
+          const requestedAbovePlayerOne = await Player.findOne({
+            username: sortedPlayers[requestedAbovePlayerOneIndex],
+          });
+
+          const requestedAbovePlayerTwo = await Player.findOne({
+            username: sortedPlayers[requestedAbovePlayerTwoIndex],
+          });
+
+          const requestedAbovePlayerThree = await Player.findOne({
+            username: sortedPlayers[requestedAbovePlayerThreeIndex],
+          });
+
+          const requestdBelowPlayerOne = await Player.findOne({
+            username: sortedPlayers[requestedBelowPlayerOneIndex],
+          });
+
+          const requestdBelowPlayerTwo = await Player.findOne({
+            username: sortedPlayers[requestedBelowPlayerTwoIndex],
+          });
+
+          res.status(200).json({
+            abovePlayerOne: requestedAbovePlayerOne,
+            abovePlayerTwo: requestedAbovePlayerTwo,
+            abovePlayerThree: requestedAbovePlayerThree,
+            requestedPlayer: requestedPlayer,
+            belowPlayerOne: requestdBelowPlayerOne,
+            belowPlayerTwo: requestdBelowPlayerTwo,
+            abovePlayerOneIndex: JSON.stringify(
+              requestedAbovePlayerOneIndex + 1
+            ),
+            abovePlayerTwoIndex: JSON.stringify(
+              requestedAbovePlayerTwoIndex + 1
+            ),
+            abovePlayerThreeIndex: JSON.stringify(
+              requestedAbovePlayerThreeIndex + 1
+            ),
+            requstedPlayerIndex: JSON.stringify(index + 1),
+            belowPlayerOneIndex: JSON.stringify(
+              requestedBelowPlayerOneIndex + 1
+            ),
+            belowPlayerTwoIndex: JSON.stringify(
+              requestedBelowPlayerTwoIndex + 1
+            ),
+          });
+        }
+      });
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
