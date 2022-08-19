@@ -4,7 +4,7 @@ const Player = require("../models/playerSchema");
 const Redis = require("ioredis");
 
 //Initializing Redis
-const redis = new Redis();
+const redis = new Redis(process.env.REDIS_URL);
 
 //Redis connection
 redis.on("connect", () => {
