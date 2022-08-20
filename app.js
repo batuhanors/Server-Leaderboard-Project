@@ -17,7 +17,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
     credentials: true,
-    origin: ["http://localhost:3000"],
+    origin: [
+      "https://batuhanors-leaderboard-project.netlify.app",
+      "http://localhost:3000",
+    ],
     exposedHeaders: "Set-Cookie",
     methods: ["GET", "POST", "PUT", "DELETE"],
   })
