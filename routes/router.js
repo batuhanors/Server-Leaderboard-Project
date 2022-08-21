@@ -9,6 +9,5 @@ router.get("/calculateMoney", API.calculateMoney);
 router.post("/calculateIndividualPrize", API.individualPlayerPrize);
 router.post("/getIndividualPlayer", API.getIndividualPlayer);
 router.post("/updatePlayer", API.updatePlayer);
-router.post("/addUser", API.addUser);
 
 module.exports = router;

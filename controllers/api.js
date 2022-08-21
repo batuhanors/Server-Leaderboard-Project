@@ -1,3 +1,5 @@
+const cluster = require("cluster");
+
 const redisClient = require("./redis");
 const Player = require("../models/playerSchema");
 
@@ -88,22 +90,7 @@ module.exports = class API {
       }
 
       res.status(200).json(playerObject);
-    } catch (error) {
-      res.status(400).json({ message: error.message });
-    }
-  }
-
-  static async addUser(req, res) {
-    try {
-      const newUser = new Player({
-        country: "Sri Lanka",
-        username: "fardpizza",
-        money: "485",
-      });
-
-      await newUser.save();
-
-      res.status(200).json({ message: "User created successfully" });
+      cluster.worker.kill();
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
@@ -133,19 +120,23 @@ module.exports = class API {
     try {
       const topPrizes = await getPrizes();
 
-      if (topPrizes.date.getDay() === 0) {
+      // I then decided to add a trigger to the MongoDB Atlas which triggers in Mondays at 00:00
+      // And resets all players money, however since it is a demo, I didn't activated it.
+      /*
+      if(topPrizes.date.getDay() === 0) {
+        //Added Mongo DB Atlas Trigger instead of this
         res.status(200).json({ isPrizeAvailable: false });
-      } else {
-        //console.log(topSortedPlayers);
+      } */
 
-        res.status(200).json({
-          isPrizeAvailable: true,
-          prizePool: topPrizes.prizeMoney,
-          firstPlayerPrize: topPrizes.firstPrize,
-          secondPlayerPrize: topPrizes.secondPrize,
-          thirdPlayerPrize: topPrizes.thirdPrize,
-        });
-      }
+      res.status(200).json({
+        isPrizeAvailable: true,
+        prizePool: topPrizes.prizeMoney,
+        firstPlayerPrize: topPrizes.firstPrize,
+        secondPlayerPrize: topPrizes.secondPrize,
+        thirdPlayerPrize: topPrizes.thirdPrize,
+      });
+
+      cluster.worker.kill();
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
@@ -175,6 +166,8 @@ module.exports = class API {
         else if (rank === 2) playerPrize = topPrizes.secondPrize;
         else if (rank === 3) playerPrize = topPrizes.thirdPrize;
         else {
+          /* So the math behind this is that basically dividing remaining prize into small chunks by dividing it
+          with 5044 (which is sum of numbers between 4 and 100) and applying inverse proportion. */
           let prizeRatio = topPrizes.remainingPrize / 5044;
           playerPrize = Math.round((100 - rank) * prizeRatio * 100) / 100;
         }
